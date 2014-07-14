@@ -95,7 +95,7 @@ public class ROBDD{
    
     // Private method to generate a HashCode
     private int generateHash(int i,int l,int h){
-        int hashCode = (pair(i,pair(l,h))%m)%( (int) Math.pow(2,k));
+        int hashCode = (pair(i,pair(l,h))%m)%Math.pow(2,k);
         return hashCode;    
     }   
    
