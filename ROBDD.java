@@ -1,5 +1,4 @@
-
-
+// Current implementation creates an infinitely expandable Hash Table
 import java.util.*;
 import java.lang.*;
 
@@ -7,40 +6,40 @@ public class ROBDD{
 
     private int[][] T;
     private int[] H;
-    private int k;
-    private int m;
     private int nodeCount;   
-  
+    private int capacity;
+    
     // Constructor. Equivalent to the init(T),init(H) method in Notes 
+    // Here n is the number of variables.
     public ROBDD(int n){
         // Initializing T to contain 0 and 1
         nodeCount = 0;
-        k = 1;
-        m = 15485863;
-        T = new int[n][3];
+        capacity = n;
+        T = new int[capacity][3];
         
         // Adding 0 and 1 node. -1 indicates NULL.
-        T[0][0] = 0;
+        T[0][0] = n+1;
         T[0][1] = -1;
         T[0][2] = -1;
-        T[1][0] = 1;
+        T[1][0] = n+1;
         T[1][1] = -1;
         T[1][2] = -1;
         nodeCount += 2;
         
         // Initializing H 
-        H = new int[(int)Math.pow(2,k)];
-        // -1 indicates not present or NULL
-        H[0] = -1; H[1] = -1;
-        
+        H = new int[capacity];
+        for(int i=0;i<capacity;i++)
+            H[i] = -1; 
     }
     
     // Returns the node which is being made.
     public int mk(int i,int l,int h){
         // Return in case the node is redundant
-        if(l == h) return l;            
-        else if(member(i,l,h)) return lookup(i,l,h);
-        else{ 
+        if(l == h){
+            return l;            
+        }else if(member(i,l,h)){
+            return lookup(i,l,h);
+        }else{ 
             int node = add(i,l,h);
             insert(i,l,h,node);
             return node;
@@ -48,12 +47,17 @@ public class ROBDD{
             
     } 
     
-    // Prints the table T. Useful for debugging
+    // Prints the table T and H. Useful for debugging
     public void print(){
+        System.out.println("Current State of T Table");    
         for(int i=0;i<nodeCount;i++){
             System.out.println(i + " " + T[i][0] 
                                  + " " + T[i][1] 
-                                 + " " + T[i][2]);
+                                 + " " + T[i][2]);                      
+        }
+        System.out.println("Current State of H Table");              
+        for(int i=0;i<H.length;i++){
+            if(H[i] != -1) System.out.println(i + " " + H[i]);
         }
     }   
     
@@ -62,6 +66,7 @@ public class ROBDD{
     // Takes O(1) time
     public int add(int i,int l,int h){
         int curNodeIndex = nodeCount++;
+        if(curNodeIndex == capacity) expandArray();
         T[curNodeIndex][0] = i;
         T[curNodeIndex][1] = l;
         T[curNodeIndex][2] = h;
@@ -73,7 +78,10 @@ public class ROBDD{
     // Takes O(1) time
     public boolean member(int i, int l, int h){
         int hashCode = generateHash(i,l,h);
-        return H[hashCode] != -1;
+        // Not present in extended capacity
+        if(hashCode>(H.length-1)) return false;
+        // Not present in current capacity
+        return H[hashCode] != -1 ;
     }
  
     // lookup(i,l,h) : Returns the node with attributes in ROBDD 
@@ -85,17 +93,27 @@ public class ROBDD{
  
     // insert(i,l,h) : Inserts node with attributes i,l,h,node into Hash Table
     public void insert(int i,int l,int h,int node){
-        if(Math.pow(2,k) == nodeCount) renewHashTable();
         int hashCode = generateHash(i,l,h);
-        if(H[hashCode] != -1) renewHashTable();
+        if(hashCode>(H.length+1)) renewHashTable(hashCode);
+        if(H[hashCode] != -1) renewHashTable(hashCode);
         H[hashCode] = node;
         return;    
     }
     
+    private void expandArray(){
+        capacity *= 2;
+        int[][] temp = new int[capacity][3];
+        for(int i=0;i<T.length;i++){
+            temp[i][0] = T[i][0];
+            temp[i][1] = T[i][1];
+            temp[i][2] = T[i][2];
+        }
+        T = temp;
+    }
    
     // Private method to generate a HashCode
     private int generateHash(int i,int l,int h){
-        int hashCode = (pair(i,pair(l,h))%m)%( (int) Math.pow(2,k));
+        int hashCode = (pair(i,pair(l,h)));
         return hashCode;    
     }   
    
@@ -105,16 +123,18 @@ public class ROBDD{
     } 
     
     // renewing hash table in case of fulfilled capacity
-    private void renewHashTable(){
-        k++;
-        int newSize = (int) Math.pow(2,k);
+    private void renewHashTable(int hashCode){
+        int newSize = hashCode + 1;
         int[] newH= new int[newSize];
+        for(int j=0;j<newSize;j++){
+            newH[j] = -1;
+        }
         for(int j=2;j<nodeCount;j++){
             int i = T[j][0];
             int l = T[j][1];
             int h = T[j][2];
-            int hashCode = generateHash(i,l,h);
-            newH[hashCode] = j; 
+            int hashCodeCur = generateHash(i,l,h);
+            newH[hashCodeCur] = j; 
         }
         H = newH;
         return;
@@ -122,6 +142,14 @@ public class ROBDD{
     
     // Test Program
     public static void main(String[] args){
-        System.out.println("Hello");
+        System.out.println("Hello. Program to demonstrate ROBDD implementation");
+        ROBDD test = new ROBDD(4);
+        test.mk(4,1,0);
+        test.mk(4,0,1);
+        test.mk(3,2,3);
+        test.mk(2,4,0);
+        test.mk(2,0,3);
+        test.mk(1,5,6);
+        test.print();   
     }   
 }
