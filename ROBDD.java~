@@ -177,7 +177,7 @@ public class ROBDD{
     public static void main(String[] args){
         System.out.println("Hello. Program to demonstrate ROBDD implementation");
         ROBDD test = new ROBDD(4);
-        test.build("NOT(x1&&NOT(x2) || NOT(x1)&&x2) && NOT(x3&&NOT(x4) || NOT(x3)&&x4)",1);
+        test.build("( NOT(x1&&NOT(x2) || NOT(x1)&&x2) && NOT(x3&&NOT(x4) || NOT(x3)&&x4 )",1);
         test.print();   
         
               
