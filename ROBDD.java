@@ -1,6 +1,8 @@
 // Current implementation creates an infinitely expandable Hash Table
+
 import java.util.*;
 import java.lang.*;
+import com.udojava.evalex.*; //Boolean expression evaluator
 
 public class ROBDD{
 
@@ -8,13 +10,14 @@ public class ROBDD{
     private int[] H;
     private int nodeCount;   
     private int capacity;
-    
+    private int vars;
     // Constructor. Equivalent to the init(T),init(H) method in Notes 
     // Here n is the number of variables.
     public ROBDD(int n){
         // Initializing T to contain 0 and 1
         nodeCount = 0;
         capacity = n;
+        vars = n;
         T = new int[capacity][3];
         
         // Adding 0 and 1 node. -1 indicates NULL.
@@ -60,6 +63,19 @@ public class ROBDD{
             if(H[i] != -1) System.out.println(i + " " + H[i]);
         }
     }   
+    
+    // Recursively builds the ROBDD
+    public int build(String exp,int i){
+        if(i > vars){
+            if(eval(exp)) return 1;
+            else return 0;
+        }else{
+            int l = build(newExp(exp,i,0),i + 1);
+            int h = build(newExp(exp,i,1),i + 1);
+            return mk(i,l,h);
+        }
+    }
+   
     
     /* Supporting Operations on T*/
     // add(i,l,h) : Adds and returns a new node with var(u) = i, var(l) = l ...
@@ -139,6 +155,23 @@ public class ROBDD{
         H = newH;
         return;
     }
+ 
+    // Evaluates boolean expressions passed in as strings
+    private boolean eval(String exp){
+        Expression e = new Expression(exp);
+        String result = String.valueOf(e.eval());
+        int resultInt = Integer.parseInt(result);
+        if(resultInt == 1) return true;
+        else return false;
+    }
+    
+    // Implements Shannon expansion by replacing var with val
+    private String newExp(String exp,int var,int val){
+        String varStr = "x" + String.valueOf(var);
+        String valStr = String.valueOf(val);
+        String newExpStr = exp.replaceAll(varStr,valStr);
+        return newExpStr;
+    }   
     
     // Test Program
     public static void main(String[] args){
@@ -151,5 +184,7 @@ public class ROBDD{
         test.mk(2,0,3);
         test.mk(1,5,6);
         test.print();   
+        
+              
     }   
 }
