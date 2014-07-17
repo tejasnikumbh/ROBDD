@@ -1,25 +1,30 @@
-// Building and ROBDD from Boolean Expression
-// Lmitations : 1. Hash Table H strategy inefficient
-
+// Computed ROBDD
+// ROBDD used for creation from the apply operation
+// This ROBDD is specifically computed from two boolean expressions using
+// the apply method. 
+// Limitations : G is 2D Array and not hash Table
 import java.util.*;
 import java.lang.*;
 import com.udojava.evalex.*; //Boolean expression evaluator
 
-public class ROBDD{
+public class ROBDDComputed{
 
     private int[][] T;
     private int[] H;
-    private int nodeCount;   
+    private int nodeCount;
     private int capacity;
-    private int vars;
-    
-    // Constructor. Equivalent to the init(T),init(H) method in Notes 
+    private int[][] G;
+    private int[][] T1;
+    private int[][] T2;
+    private int T1NodeCount;
+    private int T2NodeCount;
+    private String op;
+    // Constructor. Equivalent to the init(T),init(H) method in Notes
     // Here n is the number of variables.
-    public ROBDD(int n){
+    public ROBDDComputed(int n){
         // Initializing T to contain 0 and 1
         nodeCount = 0;
         capacity = n;
-        vars = n;
         T = new int[capacity][3];
         
         // Adding 0 and 1 node. -1 indicates NULL.
@@ -31,58 +36,88 @@ public class ROBDD{
         T[1][2] = -1;
         nodeCount += 2;
         
-        // Initializing H 
+        // Initializing H
         H = new int[capacity];
         for(int i=0;i<capacity;i++)
-            H[i] = -1; 
-    }
-    
-    // getter setters
-    public int getNodeCount(){
-        return nodeCount;
+            H[i] = -1;
     }
     
     // Returns the node which is being made.
     public int mk(int i,int l,int h){
         // Return in case the node is redundant
         if(l == h){
-            return l;            
+            return l;
         }else if(member(i,l,h)){
             return lookup(i,l,h);
-        }else{ 
+        }else{
             int node = add(i,l,h);
             insert(i,l,h,node);
             return node;
         }
             
-    } 
+    }
     
     // Prints the table T and H. Useful for debugging
     public void print(){
-        System.out.println("Current State of T Table");    
+        System.out.println("Current State of T Table");
         for(int i=0;i<nodeCount;i++){
-            System.out.println(i + " " + T[i][0] 
-                                 + " " + T[i][1] 
-                                 + " " + T[i][2]);                      
+            System.out.println(i + " " + T[i][0]
+                                 + " " + T[i][1]
+                                 + " " + T[i][2]);
         }
-        System.out.println("Current State of H Table");              
-        for(int i=0;i<H.length;i++){
+        System.out.println("Current State of H Table");
+        for(int i=0;i<nodeCount;i++){
             if(H[i] != -1) System.out.println(i + " " + H[i]);
         }
-    }   
-    
-    // Recursively builds the ROBDD
-    public int build(String exp,int i){
-        if(i > vars){
-            if(eval(exp)) return 1;
-            else return 0;
-        }else{
-            int l = build(newExp(exp,i,0),i + 1);
-            int h = build(newExp(exp,i,1),i + 1);
-            return mk(i,l,h);
-        }
     }
-   
+    
+    // Method to compute ROBDD performing operation op on u1,u2
+    public void apply(String op,ROBDD u1, ROBDD u2){
+        // Initializing the G Table. -1 indicates empty
+        T1 = u1.getROBDDTable();
+        T2 = u2.getROBDDTable();
+        T1NodeCount = u1.getNodeCount();
+        T2NodeCount = u2.getNodeCount();
+        G = new int[T1NodeCount][T2NodeCount];
+        this.op = op;
+        for(int i=0;i<T1NodeCount;i++){
+            for(int j=0;j<T2NodeCount;j++){
+                G[i][j] = -1;
+            }
+        }
+                
+        app(T1NodeCount-1,T2NodeCount-1);        
+    }
+    
+    // Private method that recursively computes the ROBDD
+    private int app(int l,int h){
+        int u;
+        if(G[l][h] != -1){ 
+         //   System.out.println("Returned 1" + String.valueOf(l) + String.valueOf(h));
+            return G[l][h];
+        }else if( ((l==0)||(l==1)) && ((h==0)||(h==1)) ) {
+            
+            
+           // System.out.println("Returned 2" + String.valueOf(l) + String.valueOf(h));
+            u = eval(String.valueOf(l) + op + String.valueOf(h))?1:0;
+        }else if(T1[l][0] == T2[h][0]){
+            
+           // System.out.println("Returned 3" + String.valueOf(l) + String.valueOf(h));
+            u = mk(T1[l][0], app(T1[l][1],T2[h][1]) , app(T1[l][2],T2[h][2]));
+        }else if(T1[l][0] < T2[h][0]){
+        
+            
+           // System.out.println("Returned 4" + String.valueOf(l) + String.valueOf(h));
+            u = mk(T1[l][0], app(T1[l][1],h), app(T1[l][2],h) );
+        }else{
+        
+            
+          //  System.out.println("Returned 5" + String.valueOf(l) + String.valueOf(h));
+            u = mk(T1[h][0], app(l,T2[h][1]), app(l,T2[h][2]) );
+        }
+        G[l][h] = u;
+        return u;
+    }
     
     /* Supporting Operations on T*/
     // add(i,l,h) : Adds and returns a new node with var(u) = i, var(l) = l ...
@@ -96,10 +131,6 @@ public class ROBDD{
         return curNodeIndex;
     }
  
-    // Returns the ROBDD Table T
-    public int[][] getROBDDTable(){
-        return T;
-    }
     /* Supporint Opeartions on H */
     // member(i,l,h) : Returns whether node with attributes is already in ROBDD.
     // Takes O(1) time
@@ -111,12 +142,12 @@ public class ROBDD{
         return H[hashCode] != -1 ;
     }
  
-    // lookup(i,l,h) : Returns the node with attributes in ROBDD 
+    // lookup(i,l,h) : Returns the node with attributes in ROBDD
     // Takes O(1) time
     public int lookup(int i,int l,int h){
         int hashCode = generateHash(i,l,h);
-        return H[hashCode];    
-    }     
+        return H[hashCode];
+    }
  
     // insert(i,l,h) : Inserts node with attributes i,l,h,node into Hash Table
     public void insert(int i,int l,int h,int node){
@@ -124,7 +155,7 @@ public class ROBDD{
         if(hashCode>(H.length+1)) renewHashTable(hashCode);
         if(H[hashCode] != -1) renewHashTable(hashCode);
         H[hashCode] = node;
-        return;    
+        return;
     }
     
     private void expandArray(){
@@ -141,13 +172,13 @@ public class ROBDD{
     // Private method to generate a HashCode
     private int generateHash(int i,int l,int h){
         int hashCode = (pair(i,pair(l,h)));
-        return hashCode;    
-    }   
+        return hashCode;
+    }
    
     // pair(i,j) useful function for generation of hash code
     public int pair(int i,int j){
         return (((i+j)*(i+j+1))/2 + i);
-    } 
+    }
     
     // renewing hash table in case of fulfilled capacity
     private void renewHashTable(int hashCode){
@@ -161,7 +192,7 @@ public class ROBDD{
             int l = T[j][1];
             int h = T[j][2];
             int hashCodeCur = generateHash(i,l,h);
-            newH[hashCodeCur] = j; 
+            newH[hashCodeCur] = j;
         }
         H = newH;
         return;
@@ -182,15 +213,30 @@ public class ROBDD{
         String valStr = String.valueOf(val);
         String newExpStr = exp.replaceAll(varStr,valStr);
         return newExpStr;
-    }   
+    }
     
     // Test Program
     public static void main(String[] args){
-        System.out.println("Hello. Program to demonstrate ROBDD implementation");
-        ROBDD test = new ROBDD(4);
-        test.build("NOT(x1&&NOT(x2) || NOT(x1)&&x2) && NOT(x3&&NOT(x4) || NOT(x3)&&x4)",1);
-        test.print();   
+        System.out.println("Hello. Program to demonstrate ROBDDComputed implementation");
+        ROBDD u1 = new ROBDD(5);
+        u1.mk(5,1,0);
+        u1.mk(4,2,0);
+        u1.mk(4,0,2);
+        u1.mk(3,3,4);
+        u1.mk(2,5,0);
+        u1.mk(2,0,5);
+        u1.mk(1,6,7);
+        //u1.print();
+        ROBDD u2 = new ROBDD(5);
+        u2.mk(5,1,0);
+        u2.mk(3,2,0);
+        u2.mk(3,0,2);
+        u2.mk(1,3,4);
+        //u2.print();
         
+        ROBDDComputed result = new ROBDDComputed(5);
+        result.apply("&&",u1,u2);
+        result.print();
               
-    }   
+    }
 }

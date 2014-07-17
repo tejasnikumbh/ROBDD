@@ -12,7 +12,6 @@ public class ROBDD{
     private int nodeCount;   
     private int capacity;
     private int vars;
-    
     // Constructor. Equivalent to the init(T),init(H) method in Notes 
     // Here n is the number of variables.
     public ROBDD(int n){
@@ -35,11 +34,6 @@ public class ROBDD{
         H = new int[capacity];
         for(int i=0;i<capacity;i++)
             H[i] = -1; 
-    }
-    
-    // getter setters
-    public int getNodeCount(){
-        return nodeCount;
     }
     
     // Returns the node which is being made.
