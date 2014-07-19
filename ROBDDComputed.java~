@@ -1,8 +1,13 @@
-// Computed ROBDD
-// ROBDD used for creation from the apply operation
-// This ROBDD is specifically computed from two boolean expressions using
-// the apply method. 
-// Limitations : G is 2D Array and not hash Table
+/* =========================================================================== *
+ * File : ROBDDComputed                                                        *
+ * =========================================================================== *
+ * Class that represents and ROBDD Computed by performing given operation on   *
+ * two given ROBDDs.                                                           *
+ * Prime Operations : apply(operation,first ROBDD, second ROBDD)               *
+ *                  : print()                                                  *
+ * Limitations      : G is 2D Array and not hash Table                         *
+ * =========================================================================== */  
+
 import java.util.*;
 import java.lang.*;
 import com.udojava.evalex.*; //Boolean expression evaluator
@@ -19,6 +24,7 @@ public class ROBDDComputed{
     private int T1NodeCount;
     private int T2NodeCount;
     private String op;
+    
     // Constructor. Equivalent to the init(T),init(H) method in Notes
     // Here n is the number of variables.
     public ROBDDComputed(int n){
@@ -66,7 +72,7 @@ public class ROBDDComputed{
                                  + " " + T[i][2]);
         }
         System.out.println("Current State of H Table");
-        for(int i=0;i<nodeCount;i++){
+        for(int i=0;i<H.length;i++){
             if(H[i] != -1) System.out.println(i + " " + H[i]);
         }
     }
@@ -93,26 +99,14 @@ public class ROBDDComputed{
     private int app(int l,int h){
         int u;
         if(G[l][h] != -1){ 
-         //   System.out.println("Returned 1" + String.valueOf(l) + String.valueOf(h));
             return G[l][h];
         }else if( ((l==0)||(l==1)) && ((h==0)||(h==1)) ) {
-            
-            
-           // System.out.println("Returned 2" + String.valueOf(l) + String.valueOf(h));
             u = eval(String.valueOf(l) + op + String.valueOf(h))?1:0;
         }else if(T1[l][0] == T2[h][0]){
-            
-           // System.out.println("Returned 3" + String.valueOf(l) + String.valueOf(h));
             u = mk(T1[l][0], app(T1[l][1],T2[h][1]) , app(T1[l][2],T2[h][2]));
         }else if(T1[l][0] < T2[h][0]){
-        
-            
-           // System.out.println("Returned 4" + String.valueOf(l) + String.valueOf(h));
             u = mk(T1[l][0], app(T1[l][1],h), app(T1[l][2],h) );
         }else{
-        
-            
-          //  System.out.println("Returned 5" + String.valueOf(l) + String.valueOf(h));
             u = mk(T1[h][0], app(l,T2[h][1]), app(l,T2[h][2]) );
         }
         G[l][h] = u;
@@ -122,7 +116,7 @@ public class ROBDDComputed{
     /* Supporting Operations on T*/
     // add(i,l,h) : Adds and returns a new node with var(u) = i, var(l) = l ...
     // Takes O(1) time
-    public int add(int i,int l,int h){
+    private int add(int i,int l,int h){
         int curNodeIndex = nodeCount++;
         if(curNodeIndex == capacity) expandArray();
         T[curNodeIndex][0] = i;
@@ -132,9 +126,9 @@ public class ROBDDComputed{
     }
  
     /* Supporint Opeartions on H */
-    // member(i,l,h) : Returns whether node with attributes is already in ROBDD.
+    // member(i,l,h) : Returns if node with attributes is already in ROBDD.
     // Takes O(1) time
-    public boolean member(int i, int l, int h){
+    private boolean member(int i, int l, int h){
         int hashCode = generateHash(i,l,h);
         // Not present in extended capacity
         if(hashCode>(H.length-1)) return false;
@@ -144,13 +138,13 @@ public class ROBDDComputed{
  
     // lookup(i,l,h) : Returns the node with attributes in ROBDD
     // Takes O(1) time
-    public int lookup(int i,int l,int h){
+    private int lookup(int i,int l,int h){
         int hashCode = generateHash(i,l,h);
         return H[hashCode];
     }
  
     // insert(i,l,h) : Inserts node with attributes i,l,h,node into Hash Table
-    public void insert(int i,int l,int h,int node){
+    private void insert(int i,int l,int h,int node){
         int hashCode = generateHash(i,l,h);
         if(hashCode>(H.length+1)) renewHashTable(hashCode);
         if(H[hashCode] != -1) renewHashTable(hashCode);
@@ -176,7 +170,7 @@ public class ROBDDComputed{
     }
    
     // pair(i,j) useful function for generation of hash code
-    public int pair(int i,int j){
+    private int pair(int i,int j){
         return (((i+j)*(i+j+1))/2 + i);
     }
     
@@ -217,7 +211,11 @@ public class ROBDDComputed{
     
     // Test Program
     public static void main(String[] args){
-        System.out.println("Hello. Program to demonstrate ROBDDComputed implementation");
+    
+        String welcomeMsg = "Hello. Program to demonstrate" +
+                            "ROBDDComputed implementation";
+        System.out.println(welcomeMsg);
+        
         ROBDD u1 = new ROBDD(5);
         u1.mk(5,1,0);
         u1.mk(4,2,0);

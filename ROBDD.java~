@@ -1,5 +1,13 @@
-// Building and ROBDD from Boolean Expression
-// Lmitations : 1. Hash Table H strategy inefficient
+/* =========================================================================== *
+ * File : ROBDD.java                                                           *                     
+ * =========================================================================== *
+ * Class ROBDD to build an ROBDD DataStructure from a Boolean expression given *
+ * as a string. Note that in the Boolean Expression, NOT is expressed as NOT(*)*
+ * and not as !. Apart from that, all other expressions are expressed normally.*
+ * Prime Methods : build(booleanExp,rootVar)                                   *     
+ *               : print()                                                     *
+ * Limitations   : Hashing strategy inefficient (memorywise) for H             *              
+ * =========================================================================== */    
 
 import java.util.*;
 import java.lang.*;
@@ -12,6 +20,7 @@ public class ROBDD{
     private int nodeCount;   
     private int capacity;
     private int vars;
+    
     // Constructor. Equivalent to the init(T),init(H) method in Notes 
     // Here n is the number of variables.
     public ROBDD(int n){
@@ -36,7 +45,19 @@ public class ROBDD{
             H[i] = -1; 
     }
     
-    // Returns the node which is being made.
+    // Getter-Setter Methods
+    // getNodeCount : Returns the number of nodes in ROBDD
+    public int getNodeCount(){
+        return nodeCount;
+    }
+    
+    // getROBDDTable : Returns the ROBDD table of the ROBDD.
+    public int[][] getROBDDTable(){
+        return T;
+    }
+    
+    // Public Interface
+    // mk(i,l,h) : Returns the node which is being made.
     public int mk(int i,int l,int h){
         // Return in case the node is redundant
         if(l == h){
@@ -51,7 +72,7 @@ public class ROBDD{
             
     } 
     
-    // Prints the table T and H. Useful for debugging
+    // print : Prints the table T and H. Useful for debugging
     public void print(){
         System.out.println("Current State of T Table");    
         for(int i=0;i<nodeCount;i++){
@@ -65,7 +86,7 @@ public class ROBDD{
         }
     }   
     
-    // Recursively builds the ROBDD
+    // build(booleanExp,RootVar) : Recursively builds the ROBDD
     public int build(String exp,int i){
         if(i > vars){
             if(eval(exp)) return 1;
@@ -76,12 +97,13 @@ public class ROBDD{
             return mk(i,l,h);
         }
     }
-   
-    
+     
+     
+    // Private Implementation 
     /* Supporting Operations on T*/
     // add(i,l,h) : Adds and returns a new node with var(u) = i, var(l) = l ...
     // Takes O(1) time
-    public int add(int i,int l,int h){
+    private int add(int i,int l,int h){
         int curNodeIndex = nodeCount++;
         if(curNodeIndex == capacity) expandArray();
         T[curNodeIndex][0] = i;
@@ -89,15 +111,11 @@ public class ROBDD{
         T[curNodeIndex][2] = h;
         return curNodeIndex;
     }
- 
-    // Returns the ROBDD Table T
-    public int[][] getROBDDTable(){
-        return T;
-    }
+    
     /* Supporint Opeartions on H */
     // member(i,l,h) : Returns whether node with attributes is already in ROBDD.
     // Takes O(1) time
-    public boolean member(int i, int l, int h){
+    private boolean member(int i, int l, int h){
         int hashCode = generateHash(i,l,h);
         // Not present in extended capacity
         if(hashCode>(H.length-1)) return false;
@@ -107,13 +125,13 @@ public class ROBDD{
  
     // lookup(i,l,h) : Returns the node with attributes in ROBDD 
     // Takes O(1) time
-    public int lookup(int i,int l,int h){
+    private int lookup(int i,int l,int h){
         int hashCode = generateHash(i,l,h);
         return H[hashCode];    
     }     
  
     // insert(i,l,h) : Inserts node with attributes i,l,h,node into Hash Table
-    public void insert(int i,int l,int h,int node){
+    private void insert(int i,int l,int h,int node){
         int hashCode = generateHash(i,l,h);
         if(hashCode>(H.length+1)) renewHashTable(hashCode);
         if(H[hashCode] != -1) renewHashTable(hashCode);
@@ -139,7 +157,7 @@ public class ROBDD{
     }   
    
     // pair(i,j) useful function for generation of hash code
-    public int pair(int i,int j){
+    private int pair(int i,int j){
         return (((i+j)*(i+j+1))/2 + i);
     } 
     
@@ -180,11 +198,14 @@ public class ROBDD{
     
     // Test Program
     public static void main(String[] args){
-        System.out.println("Hello. Program to demonstrate ROBDD implementation");
+    
+        System.out.println("Hello. Program to demonstrate" +  
+                           "ROBDD implementation");
         ROBDD test = new ROBDD(4);
-        test.build("NOT(x1&&NOT(x2) || NOT(x1)&&x2) && NOT(x3&&NOT(x4) || NOT(x3)&&x4)",1);
+        String boolExp = "NOT(x1&&NOT(x2) || NOT(x1)&&x2)" + 
+                         "&& NOT(x3&&NOT(x4) || NOT(x3)&&x4)";
+        test.build(boolExp,1);
         test.print();   
-        
-              
+                     
     }   
 }
