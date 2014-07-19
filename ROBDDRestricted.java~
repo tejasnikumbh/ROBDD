@@ -7,7 +7,6 @@
  *               : print()                                                     *
  * The current object will be the restricted ROBDD.                            *
  * =========================================================================== */
- 
 import java.util.*;
 import java.lang.*;
 import com.udojava.evalex.*; //Boolean expression evaluator

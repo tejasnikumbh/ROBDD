@@ -1,39 +1,25 @@
-/* =========================================================================== *
- * File : ROBDDRestricted.java                                                 *
- * =========================================================================== *
- * Class that instansiates an ROBDD Data Structure which can be restricted to  *
- * contain only certain nodes depending on Boolean values of certain vars.     *
- * Prime Methods : restrict(ROBDD,variable,value)                              * 
- *               : print()                                                     *
- * The current object will be the restricted ROBDD.                            *
- * =========================================================================== */
- 
 import java.util.*;
 import java.lang.*;
 import com.udojava.evalex.*; //Boolean expression evaluator
 
-public class ROBDDRestricted{
+public class ROBDDSATSolver{
 
-    private int[][] TUR;
-    private int TURNodeCount;
     private int[][] T;
     private int[] H;
     private int nodeCount;   
     private int capacity;
     private int vars;
-    private int restrictVar;
-    private int restrictVal;
-    private int[] R;
-    
+    // DP Table for efficient SAT Counts.
+    private int[] SATCountTable;
     // Constructor. Equivalent to the init(T),init(H) method in Notes 
     // Here n is the number of variables.
-    public ROBDDRestricted(int n){
+    public ROBDDSATSolver(int n){
         // Initializing T to contain 0 and 1
         nodeCount = 0;
         capacity = n;
         vars = n;
         T = new int[capacity][3];
-       
+        
         // Adding 0 and 1 node. -1 indicates NULL.
         T[0][0] = n+1;
         T[0][1] = -1;
@@ -48,8 +34,7 @@ public class ROBDDRestricted{
         for(int i=0;i<capacity;i++)
             H[i] = -1; 
     }
-   
-    
+      
     // Public Interface
     // mk(i,l,h) : Returns the node which is being made.
     public int mk(int i,int l,int h){
@@ -80,55 +65,36 @@ public class ROBDDRestricted{
         }
     }   
     
-    // restrict(ROBDD,var,val) : restricts the given ROBDD, and constructs 
-    // current ROBDD as the restricted ROBDD
-    public void restrict(ROBDD u,int var,int val){
-        TUR = u.getROBDDTable();
-        TURNodeCount = u.getNodeCount();
-        restrictVar = var;
-        restrictVal = val;
-        R = new int[TURNodeCount];
-        for(int i=0;i<TURNodeCount;i++)
-            R[i] = -1;
-        // Passing in the root node
-        res(TURNodeCount-1);
-        
-    }
+    // SATCount(ROBDD) : Returns the total number of satisfying truth assigns
+    // for given ROBDD.
+    public int SATCount(ROBDD u){
+        T = u.getROBDDTable();
+        nodeCount = u.getNodeCount();
+        SATCountTable = new int[nodeCount];
+        for(int i=0;i<nodeCount;i++) SATCountTable[i] = -1;
+        int solutions = count(nodeCount - 1);
+        return solutions;
+    }    
     
-    private int res(int node){
-        if(alreadyRestricted(node)) return node; 
-        if(TUR[node][0]>restrictVar){
-            buildROBDD(node); 
-            R[node] = 1;
-            return node;   
-        }else if(TUR[node][0]<restrictVar){
-            R[node] = 1;
-            return mk(TUR[node][0],res(TUR[node][1]),res(TUR[node][2]));
-        }else{
-            if(restrictVal == 0){
-                R[node] = 1;
-                return res(TUR[node][1]);
-            }else{
-                R[node] = 1;
-                return res(TUR[node][2]);
-            }
+    // Recursive function that does the job of SATCount. Uses DP
+    private int count(int node){
+        if(SATVisited(node)) return SATCountTable[node];
+        if(node == 0 || node == 1) return node;
+        else{
+            int arbitAssignLow = (int) Math.pow(2,T[T[node][1]][0]-T[node][0]-1);
+            int totalAssignLow = arbitAssignLow*count(T[node][1]);
+            int arbitAssignHigh = (int) Math.pow(2,T[T[node][2]][0]-T[node][0]-1);
+            int totalAssignHigh = arbitAssignHigh*count(T[node][2]);
+            return totalAssignHigh + totalAssignLow;
         }
     }
     
-    private void buildROBDD(int root){
-        if(root == 0 || root == 1) return; 
-        int i = TUR[root][0];
-        int l = TUR[root][1];
-        int h = TUR[root][2];
-        buildROBDD(l);
-        buildROBDD(h);
-        mk(i,l,h);
-    }
-    
-    private boolean alreadyRestricted(int node){
-        return R[node] != -1;
+    // Helper function for DP.
+    private boolean SATVisited(int node){
+        return SATCountTable[node] != -1;
     }
      
+    // Private Implementation 
     /* Supporting Operations on T*/
     // add(i,l,h) : Adds and returns a new node with var(u) = i, var(l) = l ...
     // Takes O(1) time
@@ -142,7 +108,7 @@ public class ROBDDRestricted{
     }
     
     /* Supporint Opeartions on H */
-    // member(i,l,h) : Returns if node with attributes is already in ROBDD.
+    // member(i,l,h) : Returns whether node with attributes is already in ROBDD.
     // Takes O(1) time
     private boolean member(int i, int l, int h){
         int hashCode = generateHash(i,l,h);
@@ -159,7 +125,7 @@ public class ROBDDRestricted{
         return H[hashCode];    
     }     
  
-    // insert(i,l,h) : Inserts node with attributes i,l,h,node in Hash Table
+    // insert(i,l,h) : Inserts node with attributes i,l,h,node into Hash Table
     private void insert(int i,int l,int h,int node){
         int hashCode = generateHash(i,l,h);
         if(hashCode>(H.length+1)) renewHashTable(hashCode);
@@ -228,17 +194,18 @@ public class ROBDDRestricted{
     // Test Program
     public static void main(String[] args){
     
-        System.out.println("Program to demonstrate" +  
+        System.out.println("Hello. Program to demonstrate" +  
                            "ROBDD implementation");
         ROBDD test = new ROBDD(4);
         String boolExp = "NOT(x1&&NOT(x2) || NOT(x1)&&x2)" + 
                          "&& NOT(x3&&NOT(x4) || NOT(x3)&&x4)";
         test.build(boolExp,1);
-        ROBDDRestricted rest = new ROBDDRestricted(4);
-        rest.restrict(test,0,0);
         
+        ROBDDSATSolver testSat= new ROBDDSATSolver(4);
+        int assgns = testSat.SATCount(test);
+        
+        System.out.println("Satisfying truth assignments : " + assgns);
         test.print();   
-        rest.print();
                      
     }   
 }
