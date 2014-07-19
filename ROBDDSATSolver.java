@@ -11,6 +11,9 @@ public class ROBDDSATSolver{
     private int vars;
     // DP Table for efficient SAT Counts.
     private int[] SATCountTable;
+    // Truth Assignment for ANSAT
+    private int[] SATAssignment;
+    private boolean SATISFIABLE;
     // Constructor. Equivalent to the init(T),init(H) method in Notes 
     // Here n is the number of variables.
     public ROBDDSATSolver(int n){
@@ -75,6 +78,48 @@ public class ROBDDSATSolver{
         int solutions = count(nodeCount - 1);
         return solutions;
     }    
+    
+    // ANYSAT(ROBDD u) : Returns a satisfying assignment for given ROBDD
+    public int[] ANYSAT(ROBDD u){
+        SATISFIABLE = true;
+        T = u.getROBDDTable();
+        nodeCount = u.getNodeCount();
+        SATAssignment = new int[vars];
+        for(int i=0;i<vars;i++) SATAssignment[i] = -1;
+        genANYSAT(nodeCount - 1);
+        if(SATISFIABLE)
+            assignArbit();
+        return SATAssignment;
+    }
+    
+    // Recursive method that generates a satisfying assignment
+    private void genANYSAT(int node){
+    
+        if(node == 0 ){
+            SATISFIABLE = false;
+            return;
+        }
+        
+        if(node == 1) return;
+        else{
+            if(T[node][1] == 0){
+                SATAssignment[T[node][0]-1] = 1;
+                genANYSAT(T[node][2]);
+                return;    
+            }else{
+                SATAssignment[T[node][0]-1] = 0;
+                genANYSAT(T[node][1]);
+                return;
+            }    
+        }
+    }
+    
+    // Method that arbitarily assigns vars that don't matter to 1.
+    private void assignArbit(){
+        for(int i=0;i<vars;i++)
+            if(SATAssignment[i] == -1) SATAssignment[i] = 1;
+        return;    
+    }
     
     // Recursive function that does the job of SATCount. Uses DP
     private int count(int node){
@@ -203,8 +248,12 @@ public class ROBDDSATSolver{
         
         ROBDDSATSolver testSat= new ROBDDSATSolver(4);
         int assgns = testSat.SATCount(test);
-        
+        int[] SATassgn = testSat.ANYSAT(test);
         System.out.println("Satisfying truth assignments : " + assgns);
+        String sat = "";
+        for(int i=0;i<SATassgn.length;i++)
+            sat += " " + String.valueOf(SATassgn[i]);
+        System.out.println("One SAT :"+ sat);    
         test.print();   
                      
     }   
